@@ -23,8 +23,7 @@ def get_content(session, url, fundcode):
     return response.content;
 
 
-# 请求并解析得到所有买入基金数据的dict key为基金的code value为基金详情对象
-def get_fund_dict(codes=file_helper.read_properties_to_dict("myfund.properties")):
+def get_fund_detail(fundcode, share):
     # 请求头
     headers = {
         "Host": "fundgz.1234567.com.cn",
@@ -40,44 +39,38 @@ def get_fund_dict(codes=file_helper.read_properties_to_dict("myfund.properties")
         "Accept-Encoding": "gzip, deflate, br",
         "Accept-Language": "zh-CN,zh;q=0.9"
     }
-
-    # 转换成dict
     headers_dict = {
         **headers
     }
-
     session = requests.Session();
     session.headers = headers_dict;
+    content = get_content(session, url, fundcode)
+    # 基金详情
+    content_str = jsonp_to_json(content);
+    i = 1
+    # 对于没有得到基金详细数据的，重试2次
+    while content_str == '':
+        print("------数据为空，重试中------")
+        if i > 2:
+            break
+        time.sleep(1)
+        content = get_content(session, url, fundcode);
+        content_str = jsonp_to_json(content);
+        i = i + 1;
+    # 将基金详情转换为json对象
+    funds_json = json.loads(content_str)
+    funds_json["share"] = share
+    # 将json对象转换为python中基金Fund对象方便后续处理
+    return fund.Fund(funds_json["fundcode"], funds_json["name"], funds_json["gsz"], funds_json["gztime"],
+                     funds_json["dwjz"], funds_json["jzrq"], funds_json["gszzl"], funds_json["share"]);
 
+
+# 请求并解析得到所有买入基金数据的dict key为基金的code value为基金详情对象
+def get_fund_dict(codes=file_helper.read_properties_to_dict("myfund.properties")):
     fund_dict = {}
-
     # 遍历要查询的所有基金
     for k, v in codes.items():
-        i = 1;
-        content = get_content(session, url, k)
-        if content is None:
-            continue
-        # 基金详情
-        content_str = jsonp_to_json(content);
-
-        # 对于没有得到基金详细数据的，重试2次
-        while content_str == '':
-            print("------数据为空，重试中------")
-            if i > 2:
-                break;
-            time.sleep(1)
-            content = get_content(session, url, k);
-            content_str = jsonp_to_json(content);
-            i = i + 1;
-        if i > 2:
-            continue;
-        # 将基金详情转换为json对象
-        funds_json = json.loads(content_str);
-        funds_json["share"] = v;
-        # 将json对象转换为python中基金Fund对象方便后续处理
-        fund_detail = fund.Fund(funds_json["fundcode"], funds_json["name"], funds_json["gsz"], funds_json["gztime"],
-                                funds_json["dwjz"], funds_json["jzrq"], funds_json["gszzl"], funds_json["share"]);
-        fund_dict[fund_detail.code] = fund_detail;
+        fund_dict[k] = get_fund_detail(k, v);
     return fund_dict;
 
 

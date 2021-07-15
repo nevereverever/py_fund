@@ -281,12 +281,13 @@ def refund_update_page(client_socket):
             <form action="update" method="GET">
             <div>
                 <div>
-                    <label>基金编码：</label><input type="text" name="fundcode">
+                    <label>基金编码：</label><input type="text" name="fundcode" placeholder="请输入基金编码" maxlength="6">
                 </div>
                 <br />
                 <div>
-                    <label>基金份额：</label><input type="text" name="share">
+                    <label>基金份额：</label><input type="text" name="share" placeholder="份额为0时代表删除该基金">
                 </div>
+                
                 <div>
                     <input type="submit" class="ant-btn ant-btn-red" value="提交">
                 </div>

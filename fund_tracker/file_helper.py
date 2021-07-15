@@ -28,6 +28,10 @@ def set_properties_to_file(file_name, key, value, annotation):
     else:
         print(f"未找到需更新的键值：{key}-{value}，已添加新的键值")
     kv_dict[key] = value
+    if value == "0":
+        print(f"键值：{key}-{value}，由于设置值被设置为0，删除该行")
+        del kv_dict[key]
+
     write_dict_and_annotation_to_file(file_name, kv_dict, annotation)
 
 
