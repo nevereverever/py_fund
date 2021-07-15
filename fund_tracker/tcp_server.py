@@ -139,7 +139,10 @@ def refund_update(client_socket, request_params):
         else:
             print("错误的参数，忽略")
     if fundcode != '' and share != '':
-        annotation = fund_search.get_code_name_dict(fund_search.get_fund_dict())
+        codes = file_helper.read_properties_to_dict("myfund.properties")
+        codes[fundcode] = share
+        fund_dict = fund_search.get_fund_dict(codes)
+        annotation = fund_search.get_code_name_dict(fund_dict)
         file_helper.set_properties_to_file(file_name, fundcode, share, annotation)
 
     # 构造响应数据

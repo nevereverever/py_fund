@@ -18,11 +18,13 @@ def jsonp_to_json(jsonp):
 # 获取指定基金详细数据
 def get_content(session, url, fundcode):
     response = session.get(url + fundcode + ".js?_=" + str(datetime.datetime.now().timetuple()))
+    if response.status_code != 200:
+        return None;
     return response.content;
 
 
 # 请求并解析得到所有买入基金数据的dict key为基金的code value为基金详情对象
-def get_fund_dict(codes = file_helper.read_properties_to_dict("myfund.properties")):
+def get_fund_dict(codes=file_helper.read_properties_to_dict("myfund.properties")):
     # 请求头
     headers = {
         "Host": "fundgz.1234567.com.cn",
@@ -52,7 +54,9 @@ def get_fund_dict(codes = file_helper.read_properties_to_dict("myfund.properties
     # 遍历要查询的所有基金
     for k, v in codes.items():
         i = 1;
-        content = get_content(session, url, k);
+        content = get_content(session, url, k)
+        if content is None:
+            continue
         # 基金详情
         content_str = jsonp_to_json(content);
 
