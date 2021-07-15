@@ -84,8 +84,9 @@ def refund_list(client_socket):
 
     content += """
     <script>
+        var hostAndPort=document.location.host;
         function update_fund(){
-            window.open("http://localhost:8000/updateFund","_blank");
+            window.open("http://"+hostAndPort+"/updateFund","_blank");
         }
     
         var fresh = true;
@@ -274,7 +275,7 @@ def refund_update_page(client_socket):
             </style>
         </header>
         <body>
-            <form action="http://localhost:8000/update" method="GET">
+            <form action="update" method="GET">
             <div>
                 <div>
                     <label>基金编码：</label><input type="text" name="fundcode">
