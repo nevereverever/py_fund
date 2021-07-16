@@ -125,8 +125,9 @@ def refund_list(client_socket):
 def refund_update(client_socket, request_params):
     fundcode = ""
     share = ""
+    fund = object()
     request_params = request_params.split("?")[1]
-    print(f"请求参数为：{request_params}")
+    print(f"执行基金修改，请求参数为：{request_params}")
     # 解析请求参数
     request_param_arr = request_params.split("&")
     for param in request_param_arr:
@@ -139,12 +140,12 @@ def refund_update(client_socket, request_params):
         else:
             print("错误的参数，忽略")
     if fundcode != '' and share != '':
-        codes = file_helper.read_properties_to_dict("myfund.properties")
+        codes = file_helper.read_properties_to_dict(file_name)
         codes[fundcode] = share
         fund_dict = fund_search.get_fund_dict(codes)
         annotation = fund_search.get_code_name_dict(fund_dict)
         file_helper.set_properties_to_file(file_name, fundcode, share, annotation)
-
+        fund = fund_search.get_fund_detail(fundcode, share)
     # 构造响应数据
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
@@ -204,10 +205,10 @@ def refund_update(client_socket, request_params):
             </style>
         <body>
             <h3>更新成功</h3>
-            <p>已成功更新基金份额，基金编码(fundcode)为：
+            <p>已成功更新基金份额，基金名称(name)为:
             """
 
-    content += fundcode + "，份额(share)为：" + share + "</p>"
+    content += fund.name + "，基金编码(fundcode)为：" + fund.code + "，份额(share)为：" + fund.share + "</p>"
     content += """
             <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
         </body>
