@@ -52,11 +52,7 @@
 
 ### 新增基金
 
-用户输入**基金编码**和**基金份额**后，点击提交。该基金信息成功维护到系统。
-
-![image-20210716173135584](/Users/younglu/Library/Application Support/typora-user-images/image-20210716173135584.png)
-
-![image-20210716173643599](/Users/younglu/Library/Application Support/typora-user-images/image-20210716173643599.png)
+用户输入**基金编码**和**基金份额**后，点击提交。该基金信息成功维护到系统
 
 ### 修改基金
 
