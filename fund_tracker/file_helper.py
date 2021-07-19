@@ -4,7 +4,7 @@ def read_properties_to_dict(file_name):
     f = open(file_name, "r")
     for line in f:
         # 忽略注释
-        if line.startswith("#"):
+        if line.startswith("#") or line.strip() == '':
             continue
         line = line.rstrip("\n")
         codes[line.split("=")[0]] = line.split("=")[1]
