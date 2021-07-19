@@ -1,0 +1,9 @@
+.border-box-content {
+  padding: 40px;
+  box-sizing: border-box;
+  display: flex;
+}
+
+.main-content {
+  margin: 0 auto;
+}
