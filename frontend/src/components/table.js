@@ -1,113 +1,115 @@
-import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import Paper from '@material-ui/core/Paper';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TablePagination from '@material-ui/core/TablePagination';
-import TableRow from '@material-ui/core/TableRow';
+import {React,Component} from 'react';
+import { Table, Button } from 'antd'
+import * as fund from '../apis/fund'
 
+// dwjz: "2.4440"
+// fundcode: "001182"
+// gsz: "2.4469"
+// gszzl: "0.12"
+// gztime: "2021-07-20 15:00"
+// jzrq: "2021-07-19"
+// name: "易方达安心回馈混合"
 const columns = [
-  { id: 'name', label: 'Name', minWidth: 170 },
-  { id: 'code', label: 'ISO\u00a0Code', minWidth: 100 },
   {
-    id: 'population',
-    label: 'Population',
-    minWidth: 170,
-    align: 'right',
-    format: (value) => value.toLocaleString('en-US'),
+    title: '姓名',
+    dataIndex: 'name',
+    sorter: true,
+    width: '20%'
   },
   {
-    id: 'size',
-    label: 'Size\u00a0(km\u00b2)',
-    minWidth: 170,
-    align: 'right',
-    format: (value) => value.toLocaleString('en-US'),
+    title: '截止日期',
+    dataIndex: 'jzrq',
   },
   {
-    id: 'density',
-    label: 'Density',
-    minWidth: 170,
-    align: 'right',
-    format: (value) => value.toFixed(2),
+    title: 'dwjz',
+    dataIndex: 'dwjz',
+  },
+  {
+    title: 'fundcode',
+    dataIndex: 'fundcode',
+  },
+  {
+    title: 'gsz',
+    dataIndex: 'gsz',
+  },
+  {
+    title: 'gszzl',
+    dataIndex: 'gszzl',
+  },
+  {
+    title: 'gztime',
+    dataIndex: 'gztime',
   },
 ];
 
-function createData(name, code, population, size) {
-  const density = population / size;
-  return { name, code, population, size, density };
-}
+export class FundTable extends Component {
 
-const rows = [
-  createData('India', 'IN', 1324171354, 3287263),
-  createData('China', 'CN', 1403500365, 9596961),
-  createData('Italy', 'IT', 60483973, 301340),
-  createData('United States', 'US', 327167434, 9833520),
-  createData('Canada', 'CA', 37602103, 9984670),
-  createData('Australia', 'AU', 25475400, 7692024),
-  createData('Germany', 'DE', 83019200, 357578),
-  createData('Ireland', 'IE', 4857000, 70273),
-  createData('Mexico', 'MX', 126577691, 1972550),
-  createData('Japan', 'JP', 126317000, 377973),
-  createData('France', 'FR', 67022000, 640679),
-  createData('United Kingdom', 'GB', 67545757, 242495),
-  createData('Russia', 'RU', 146793744, 17098246),
-  createData('Nigeria', 'NG', 200962417, 923768),
-  createData('Brazil', 'BR', 210147125, 8515767),
-];
+    state = {
+      data: [],
+      loading: false,
+    };
 
-const useStyles = makeStyles({
-  root: {
-    width: '2400px',
-    alignContent: "center"
-  },
-  container: {
-    maxHeight: 1200,
+    // 构造方法 
+    // this.props 为组件传参
+    constructor() {
+      super()
+    }
+
+    handleTableChange = () =>{
+      // this.fetch(codes=["001182"])
+      this.fetch({codes:this.props.numbers})
+    }
+    
+    fetch = async ({codes}) => {
+      this.setState({ loading: true });
+      
+      var rows = []
+      for(var i=0;i<codes.length;i++){
+        console.log(codes[i])
+        await fund.fetchData(codes[i]).then((res)=>{
+          console.log(res)
+          res["key"] = res["fundcode"]
+          rows.push(res)
+        }).catch((err)=>{
+          console.log("error:")
+          console.log(err)
+        })
+      }
+
+      this.setState({
+        loading: false,
+        data: rows
+      });
+
+    };
+
+    // 渲染之前执行
+  componentWillMount() {
+      /*
+        该方法可以用于一些数据的提前加载
+      */
+    }
+
+  createData(name, code, population, size) {
+    const density = population / size;
+    return { name, code, population, size, density };
   }
-});
 
-export default function StickyHeadTable() {
-  const classes = useStyles();
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  render() {
+    const { data, loading } = this.state;
+    return (
+      <div>
+        <Button onClick={this.handleTableChange}> 获取数据 </Button>
+        <Table pagination={false} dataSource={data} columns={columns} loading={loading} onChange={this.handleTableChange} />
+      </div>
+    )
+  }
 
-  return (
-    <Paper className={classes.root}>
-      <TableContainer className={classes.container}>
-        <Table stickyHeader aria-label="sticky table">
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{ minWidth: column.minWidth }}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-              return (
-                <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
-                  {columns.map((column) => {
-                    const value = row[column.id];
-                    return (
-                      <TableCell key={column.id} align={column.align}>
-                        {column.format && typeof value === 'number' ? column.format(value) : value}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
-  );
-}
+  // 渲染之后执行
+  componentDidMount() {
+    /*
+      该方法可以用于清除一些无效的数据
+    */
+  }
+
+ }

@@ -4,6 +4,11 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+function jsonpgz(data) {
+	console.log(data)
+	return (data)
+}
+
 ReactDOM.render(
   <React.StrictMode>
     <App />

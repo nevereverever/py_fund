@@ -2,7 +2,6 @@
 
 import JsonP from 'jsonp'
 
-
 // function jsonp(url) {
 //         return new Promise((resolve, reject) => {
 //             window.jsonCallBack =(result) => {
@@ -18,15 +17,19 @@ import JsonP from 'jsonp'
 //         })
 // }
 
+export var arr = []
 
 function jsonpgz(data) {
-	return(data);
+	return (data)
 }
+
+
 export function fetchData(code) {
+	const realTime = Date.now();
 	return new Promise((resolve,reject)=>{
-		JsonP("https://fundgz.1234567.com.cn/js/" + code + ".js?",
+		JsonP("https://fundgz.1234567.com.cn/js/" + code + ".js?rt=" + realTime,
 		{
-			name:"jsonpgz"
+			name:"jsonpgz",
 		},
 		function(err,res){
 			if(err!=null){
