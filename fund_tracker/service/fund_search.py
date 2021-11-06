@@ -1,8 +1,7 @@
 import json
 import requests
 import datetime
-from fund_tracker import fund
-from fund_tracker import file_helper
+from fund_tracker.pojo import fund
 
 
 #########################
@@ -64,20 +63,24 @@ def get_fund_detail(fundcode, share):
                      funds_json["dwjz"], funds_json["jzrq"], funds_json["gszzl"], funds_json["share"])
 
 
-# 请求并解析得到所有买入基金数据的dict key为基金的code value为基金详情对象
-def get_fund_dict(codes=file_helper.read_properties_to_dict("myfund.properties")):
+def get_fund_dict(codes):
+    """
+    通过爬虫获取所有基金的详情信息
+    :param codes: 基金dict{fundcode,share}
+    :return:
+    """
     fund_dict = {}
     # 遍历要查询的所有基金
-    for k, v in codes.items():
+    for fundcode, share in codes.items():
         retry_times = 0
-        fund_detail = get_fund_detail(k, v)
+        fund_detail = get_fund_detail(fundcode, share)
         # 重试两次以后还是为空，跳过当前基金取下一个基金详情信息
         while fund_detail is None and retry_times < 2:
             retry_times = retry_times + 1
-            fund_detail = get_fund_detail(k, v)
+            fund_detail = get_fund_detail(fundcode, share)
         if fund_detail is None:
             continue
-        fund_dict[k] = fund_detail
+        fund_dict[fundcode] = fund_detail
     return fund_dict
 
 

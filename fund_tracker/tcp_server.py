@@ -1,12 +1,19 @@
 import socket
-from fund_tracker import fund_search
-from fund_tracker import file_helper
+from fund_tracker.service import fund_search
+from fund_tracker.utils import file_helper
+from fund_tracker.pojo.fund_properties import FundProperties
 from multiprocessing import Process
 
+# 基金份额文件
 file_name = "myfund.properties"
 
 
 def refund_list(client_socket):
+    """
+    获取基金列表
+    :param client_socket: 套接字对象
+    :return:
+    """
     # 构造响应数据
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
@@ -43,7 +50,8 @@ def refund_list(client_socket):
     """
     # 今日收入
     today_income = 0.0
-    fund_dict = fund_search.get_fund_dict()
+    codes = file_helper.read_properties_to_dict(file_name)
+    fund_dict = fund_search.get_fund_dict(codes)
     # 遍历拼接每行数据
     for k, v in fund_dict.items():
         # 收入大于0为红色，否则为绿色
@@ -123,9 +131,14 @@ def refund_list(client_socket):
 
 
 def refund_update(client_socket, request_params):
+    """
+    修改基金净值方法
+    :param client_socket: 套接字对象
+    :param request_params: 请求参数
+    :return:
+    """
     fundcode = ""
     share = ""
-    fund = object()
     request_params = request_params.split("?")[1]
     print(f"执行基金修改，请求参数为：{request_params}")
     # 解析请求参数
@@ -140,87 +153,156 @@ def refund_update(client_socket, request_params):
         else:
             print("错误的参数，忽略")
     if fundcode != '' and share != '':
-        codes = file_helper.read_properties_to_dict(file_name)
-        codes[fundcode] = share
-        fund_dict = fund_search.get_fund_dict(codes)
-        annotation = fund_search.get_code_name_dict(fund_dict)
-        file_helper.set_properties_to_file(file_name, fundcode, share, annotation)
+        # 获取基金配置对象，并写入配置文件
         fund = fund_search.get_fund_detail(fundcode, share)
-    # 构造响应数据
-    response_start_line = "HTTP/1.1 200 OK\r\n"
-    response_headers = "Server: My server\r\n"
-    response_body = response_start_line + response_headers + "\r\n"
-    # 构造html内容
-    content = """
-    <html>
-        <header>
-            <title>更新成功</title>
-        </header>
-        <style type="text/css">
-                        .ant-btn {
-                            line-height: 1.499;
-                            position: relative;
-                            display: inline-block;
-                            font-weight: 400;
-                            white-space: nowrap;
-                            text-align: center;
-                            background-image: none;
-                            border: 1px solid transparent;
-                            -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                            box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                            cursor: pointer;
-                            -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                            transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                            -webkit-user-select: none;
-                            -moz-user-select: none;
-                            -ms-user-select: none;
-                            user-select: none;
-                            -ms-touch-action: manipulation;
-                            touch-action: manipulation;
-                            height: 32px;
-                            padding: 0 15px;
-                            font-size: 14px;
-                            border-radius: 4px;
-                            color: rgba(0,0,0,0.65);
-                            background-color: #fff;
-                            border-color: #d9d9d9;
-                        }
-                        
-                        .ant-btn-primary {
-                            color: #fff;
-                            background-color: #1890ff;
-                            border-color: #1890ff;
-                            text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                            -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                        }
-                        .ant-btn-red {
-                            color: #fff;
-                            background-color: #FF5A44;
-                            border-color: #FF5A44;
-                            text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                            -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                        }
-            </style>
-        <body>
-            <h3>更新成功</h3>
-            <p>已成功更新基金份额，基金名称(name)为:
-            """
+        fund_properties = FundProperties(fundcode, share, fund.name)
+        file_helper.write_fund_properties_to_file(file_name, fund_properties)
+        # 构造响应数据
+        response_start_line = "HTTP/1.1 200 OK\r\n"
+        response_headers = "Server: My server\r\n"
+        response_body = response_start_line + response_headers + "\r\n"
+        # 构造html内容
+        content = """
+        <html>
+            <header>
+                <title>更新成功</title>
+            </header>
+            <style type="text/css">
+                            .ant-btn {
+                                line-height: 1.499;
+                                position: relative;
+                                display: inline-block;
+                                font-weight: 400;
+                                white-space: nowrap;
+                                text-align: center;
+                                background-image: none;
+                                border: 1px solid transparent;
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                cursor: pointer;
+                                -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                -webkit-user-select: none;
+                                -moz-user-select: none;
+                                -ms-user-select: none;
+                                user-select: none;
+                                -ms-touch-action: manipulation;
+                                touch-action: manipulation;
+                                height: 32px;
+                                padding: 0 15px;
+                                font-size: 14px;
+                                border-radius: 4px;
+                                color: rgba(0,0,0,0.65);
+                                background-color: #fff;
+                                border-color: #d9d9d9;
+                            }
+                            
+                            .ant-btn-primary {
+                                color: #fff;
+                                background-color: #1890ff;
+                                border-color: #1890ff;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                            .ant-btn-red {
+                                color: #fff;
+                                background-color: #FF5A44;
+                                border-color: #FF5A44;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                </style>
+            <body>
+                <h3>更新成功</h3>
+                <p>已成功更新基金份额，基金名称(name)为:
+                """
 
-    content += fund.name + "，基金编码(fundcode)为：" + fund.code + "，份额(share)为：" + fund.share + "</p>"
-    content += """
-            <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
-        </body>
-    </html>
-    """
-    # 向客户端返回响应数据
-    client_socket.send(bytes(response_body + content, "gbk"))
-    # 关闭客户端连接
-    client_socket.close()
+        content += fund.name + "，基金编码(fundcode)为：" + fund.code + "，份额(share)为：" + fund.share + "</p>"
+        content += """
+                <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
+            </body>
+        </html>
+        """
+        # 向客户端返回响应数据
+        client_socket.send(bytes(response_body + content, "gbk"))
+        # 关闭客户端连接
+        client_socket.close()
+    else:
+        # 构造响应数据
+        response_start_line = "HTTP/1.1 200 OK\r\n"
+        response_headers = "Server: My server\r\n"
+        response_body = response_start_line + response_headers + "\r\n"
+        # 构造html内容
+        content = """
+        <html>
+            <header>
+                <title>更新失败</title>
+            </header>
+            <style type="text/css">
+                            .ant-btn {
+                                line-height: 1.499;
+                                position: relative;
+                                display: inline-block;
+                                font-weight: 400;
+                                white-space: nowrap;
+                                text-align: center;
+                                background-image: none;
+                                border: 1px solid transparent;
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                cursor: pointer;
+                                -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                -webkit-user-select: none;
+                                -moz-user-select: none;
+                                -ms-user-select: none;
+                                user-select: none;
+                                -ms-touch-action: manipulation;
+                                touch-action: manipulation;
+                                height: 32px;
+                                padding: 0 15px;
+                                font-size: 14px;
+                                border-radius: 4px;
+                                color: rgba(0,0,0,0.65);
+                                background-color: #fff;
+                                border-color: #d9d9d9;
+                            }
+                            
+                            .ant-btn-primary {
+                                color: #fff;
+                                background-color: #1890ff;
+                                border-color: #1890ff;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                            .ant-btn-red {
+                                color: #fff;
+                                background-color: #FF5A44;
+                                border-color: #FF5A44;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                </style>
+            <body>
+                <h3>更新失败</h3>
+                <p>未成功更新基金份额，基金编码或份额不可为空！
+        """
+        # 向客户端返回响应数据
+        client_socket.send(bytes(response_body + content, "gbk"))
+        # 关闭客户端连接
+        client_socket.close()
 
 
 def refund_update_page(client_socket):
+    """
+    基金修改页面
+    :param client_socket:
+    :return:
+    """
     # 构造响应数据
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
@@ -305,6 +387,12 @@ def refund_update_page(client_socket):
 
 
 def router_handler(request_data_header_url, client_socket):
+    """
+    地址路由处理器
+    :param request_data_header_url:
+    :param client_socket:
+    :return:
+    """
     if request_data_header_url == "/":
         refund_list(client_socket)
     elif request_data_header_url.startswith("/updateFund"):
@@ -318,6 +406,8 @@ def router_handler(request_data_header_url, client_socket):
 def handle_client(client_socket):
     """
     处理客户端请求
+    :param client_socket:
+    :return:
     """
     request_data = client_socket.recv(1024)
     request_data_json_str = request_data.decode()
