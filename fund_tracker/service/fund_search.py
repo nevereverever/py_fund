@@ -55,6 +55,8 @@ def get_fund_detail(fundcode, share):
         return None
     # 将jsonp结构数据转换为json字符串
     fund_details_json_str = jsonp_to_json(jsonp_content)
+    if fund_details_json_str == '':
+        return None
     # 将基金详情转换为json对象
     funds_json = json.loads(fund_details_json_str)
     funds_json["share"] = share

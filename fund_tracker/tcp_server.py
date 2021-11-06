@@ -2,6 +2,7 @@ import socket
 from fund_tracker.service import fund_search
 from fund_tracker.utils import file_helper
 from fund_tracker.pojo.fund_properties import FundProperties
+from fund_tracker.view import fund_view
 from multiprocessing import Process
 
 # 基金份额文件
@@ -152,79 +153,20 @@ def refund_update(client_socket, request_params):
             share = param_arr[1]
         else:
             print("错误的参数，忽略")
+
     if fundcode != '' and share != '':
         # 获取基金配置对象，并写入配置文件
         fund = fund_search.get_fund_detail(fundcode, share)
-        fund_properties = FundProperties(fundcode, share, fund.name)
-        file_helper.write_fund_properties_to_file(file_name, fund_properties)
+        if fund is None:
+            content = fund_view.update_failed_page("未成功获取到基金详情，基金库中可能尚未维护该基金！")
+        else:
+            fund_properties = FundProperties(fundcode, share, fund.name)
+            file_helper.write_fund_properties_to_file(file_name, fund_properties)
+            content = fund_view.update_success_page(fund)
         # 构造响应数据
         response_start_line = "HTTP/1.1 200 OK\r\n"
         response_headers = "Server: My server\r\n"
         response_body = response_start_line + response_headers + "\r\n"
-        # 构造html内容
-        content = """
-        <html>
-            <header>
-                <title>更新成功</title>
-            </header>
-            <style type="text/css">
-                            .ant-btn {
-                                line-height: 1.499;
-                                position: relative;
-                                display: inline-block;
-                                font-weight: 400;
-                                white-space: nowrap;
-                                text-align: center;
-                                background-image: none;
-                                border: 1px solid transparent;
-                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                                box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                                cursor: pointer;
-                                -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                                transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                                -webkit-user-select: none;
-                                -moz-user-select: none;
-                                -ms-user-select: none;
-                                user-select: none;
-                                -ms-touch-action: manipulation;
-                                touch-action: manipulation;
-                                height: 32px;
-                                padding: 0 15px;
-                                font-size: 14px;
-                                border-radius: 4px;
-                                color: rgba(0,0,0,0.65);
-                                background-color: #fff;
-                                border-color: #d9d9d9;
-                            }
-                            
-                            .ant-btn-primary {
-                                color: #fff;
-                                background-color: #1890ff;
-                                border-color: #1890ff;
-                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            }
-                            .ant-btn-red {
-                                color: #fff;
-                                background-color: #FF5A44;
-                                border-color: #FF5A44;
-                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            }
-                </style>
-            <body>
-                <h3>更新成功</h3>
-                <p>已成功更新基金份额，基金名称(name)为:
-                """
-
-        content += fund.name + "，基金编码(fundcode)为：" + fund.code + "，份额(share)为：" + fund.share + "</p>"
-        content += """
-                <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
-            </body>
-        </html>
-        """
         # 向客户端返回响应数据
         client_socket.send(bytes(response_body + content, "gbk"))
         # 关闭客户端连接
@@ -235,62 +177,7 @@ def refund_update(client_socket, request_params):
         response_headers = "Server: My server\r\n"
         response_body = response_start_line + response_headers + "\r\n"
         # 构造html内容
-        content = """
-        <html>
-            <header>
-                <title>更新失败</title>
-            </header>
-            <style type="text/css">
-                            .ant-btn {
-                                line-height: 1.499;
-                                position: relative;
-                                display: inline-block;
-                                font-weight: 400;
-                                white-space: nowrap;
-                                text-align: center;
-                                background-image: none;
-                                border: 1px solid transparent;
-                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                                box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                                cursor: pointer;
-                                -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                                transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                                -webkit-user-select: none;
-                                -moz-user-select: none;
-                                -ms-user-select: none;
-                                user-select: none;
-                                -ms-touch-action: manipulation;
-                                touch-action: manipulation;
-                                height: 32px;
-                                padding: 0 15px;
-                                font-size: 14px;
-                                border-radius: 4px;
-                                color: rgba(0,0,0,0.65);
-                                background-color: #fff;
-                                border-color: #d9d9d9;
-                            }
-                            
-                            .ant-btn-primary {
-                                color: #fff;
-                                background-color: #1890ff;
-                                border-color: #1890ff;
-                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            }
-                            .ant-btn-red {
-                                color: #fff;
-                                background-color: #FF5A44;
-                                border-color: #FF5A44;
-                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            }
-                </style>
-            <body>
-                <h3>更新失败</h3>
-                <p>未成功更新基金份额，基金编码或份额不可为空！
-        """
+        content = fund_view.update_failed_page("未成功更新基金份额，基金编码或份额不可为空！")
         # 向客户端返回响应数据
         client_socket.send(bytes(response_body + content, "gbk"))
         # 关闭客户端连接
@@ -308,77 +195,7 @@ def refund_update_page(client_socket):
     response_headers = "Server: My server\r\n"
     response_body = response_start_line + response_headers + "\r\n"
     # 构造html内容
-    content = """
-    <html>
-        <header>
-            <title>基金更新</title>
-            <style type="text/css">
-                        .ant-btn {
-                            line-height: 1.499;
-                            position: relative;
-                            display: inline-block;
-                            font-weight: 400;
-                            white-space: nowrap;
-                            text-align: center;
-                            background-image: none;
-                            border: 1px solid transparent;
-                            -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                            box-shadow: 0 2px 0 rgba(0,0,0,0.015);
-                            cursor: pointer;
-                            -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                            transition: all .3s cubic-bezier(.645, .045, .355, 1);
-                            -webkit-user-select: none;
-                            -moz-user-select: none;
-                            -ms-user-select: none;
-                            user-select: none;
-                            -ms-touch-action: manipulation;
-                            touch-action: manipulation;
-                            height: 32px;
-                            padding: 0 15px;
-                            font-size: 14px;
-                            border-radius: 4px;
-                            color: rgba(0,0,0,0.65);
-                            background-color: #fff;
-                            border-color: #d9d9d9;
-                        }
-                        
-                        .ant-btn-primary {
-                            color: #fff;
-                            background-color: #1890ff;
-                            border-color: #1890ff;
-                            text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                            -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                        }
-                        .ant-btn-red {
-                            color: #fff;
-                            background-color: #FF5A44;
-                            border-color: #FF5A44;
-                            text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
-                            -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                            box-shadow: 0 2px 0 rgba(0,0,0,0.045);
-                        }
-            </style>
-        </header>
-        <body>
-            <form action="update" method="GET">
-            <div>
-                <div>
-                    <label>基金编码：</label><input type="text" name="fundcode" placeholder="请输入基金编码" maxlength="6">
-                </div>
-                <br />
-                <div>
-                    <label>基金份额：</label><input type="text" name="share" placeholder="份额为0时代表删除该基金">
-                </div>
-                
-                <div>
-                    <input type="submit" class="ant-btn ant-btn-red" value="提交">
-                </div>
-            </div>
-            </form>
-        </body>
-    </html>        
-    """
+    content = fund_view.fund_update_page()
 
     # 向客户端返回响应数据
     client_socket.send(bytes(response_body + content, "gbk"))
