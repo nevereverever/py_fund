@@ -66,7 +66,7 @@ def write_fund_properties_to_file(file_name, fund_properties: fund_properties.Fu
         replace_kv_properties(file_name, fund_properties.code, fund_properties.share)
     else:
         print(f"未找到需更新的键值：{fund_properties.code}-{fund_properties.share}，即将添加新的键值")
-        f_w = open(file_name, "w", encoding='utf-8')
+        f_w = open(file_name, "a", encoding='utf-8')
         f_w.write("# " + fund_properties.annotation + "\n")
         f_w.write(fund_properties.code + "=" + fund_properties.share + "\n")
         f_w.close()
