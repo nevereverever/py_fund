@@ -37,13 +37,13 @@ def refund_list():
                         <tr>
                             <td>基金编码</td>
                             <td>基金名称</td>
-                            <td>上次净值更新日期</td>
+                            <td>上个交易日</td>
                             <td>上次净值</td>
                             <td>实时净值</td>
                             <td>净值更新时间</td>
-                            <td>净值估算</td>
+                            <td>估算净值</td>
                             <td>买入份额</td>
-                            <td>实时估算总金额</td>
+                            <td>实时金额</td>
                             <td>估算盈亏</td>
                             <td>操作</td>
                         </tr>
