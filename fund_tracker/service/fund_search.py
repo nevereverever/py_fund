@@ -4,18 +4,22 @@ import datetime
 from fund_tracker.pojo import fund
 
 
-#########################
-# 将jsonp结构转换json字符串
-#########################
 def jsonp_to_json(jsonp):
+    """
+    将jsonp结构转换json字符串
+    :param jsonp: jsonp对象
+    :return:
+    """
     content_str = jsonp.decode()
     return content_str.replace("jsonpgz(", "").replace(");", "")
 
 
-###############################
-# 发送网络请求，获取指定基金详细数据
-###############################
 def get_fund_details(fundcode):
+    """
+    发送网络请求，获取指定基金详细数据
+    :param fundcode: 基金编码
+    :return:
+    """
     # 基金url请求地址前缀
     url = "https://fundgz.1234567.com.cn/js/"
     # 请求头
@@ -45,10 +49,13 @@ def get_fund_details(fundcode):
     return response.content
 
 
-#######################
-# 获取指定基金编码的基金详情
-#######################
 def get_fund_detail(fundcode, share):
+    """
+    获取指定基金编码的基金详情
+    :param fundcode: 基金编码
+    :param share: 份额
+    :return:
+    """
     # 获取基金详情，这里获取到的是jsonp结构的数据
     jsonp_content = get_fund_details(fundcode)
     if jsonp_content is None:
@@ -84,13 +91,3 @@ def get_fund_dict(codes):
             continue
         fund_dict[fundcode] = fund_detail
     return fund_dict
-
-
-#############################
-# 获取基金编码和基金名称的映射关系
-#############################
-def get_code_name_dict(fund_dict):
-    code_name_dict = {}
-    for k, v in fund_dict.items():
-        code_name_dict[k] = v.name
-    return code_name_dict

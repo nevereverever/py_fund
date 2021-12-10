@@ -2,6 +2,10 @@ from fund_tracker.pojo.fund import Fund
 
 
 def fund_update_page():
+    """
+    基金净值更新页面
+    :return:
+    """
     content = """
     <html>
         <header>
@@ -62,7 +66,7 @@ def fund_update_page():
                 </div>
                 <br />
                 <div>
-                    <label>基金份额：</label><input type="text" name="share" placeholder="份额为0时代表删除该基金">
+                    <label>基金份额：</label><input type="text" name="share" placeholder="请输入基金份额">
                 </div>
                 
                 <div>
@@ -150,6 +154,11 @@ def update_success_page(fund: Fund):
 
 
 def update_failed_page(reason: str):
+    """
+    修改失败页面
+    :param reason:
+    :return:
+    """
     content = """
         <html>
             <header>

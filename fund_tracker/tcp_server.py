@@ -7,12 +7,12 @@ from multiprocessing import Process
 
 # 基金份额文件
 file_name = "myfund.properties"
+client_socket = None
 
 
-def refund_list(client_socket):
+def refund_list():
     """
     获取基金列表
-    :param client_socket: 套接字对象
     :return:
     """
     # 构造响应数据
@@ -45,6 +45,7 @@ def refund_list(client_socket):
                             <td>买入份额</td>
                             <td>实时估算总金额</td>
                             <td>估算盈亏</td>
+                            <td>操作</td>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,7 +81,7 @@ def refund_list(client_socket):
             content += "<td><b style='color:red'>"
         else:
             content += "<td><b style='color:green'>"
-        content += str(current_fund_income) + "</b></td></tr>"
+        content += str(current_fund_income) + "</b></td><td><button onclick='del_fund(this)'>删除" + "</button></td></tr>"
     content += """</tbody>
     </table><div id="sum" style="float:left">"""
 
@@ -93,9 +94,23 @@ def refund_list(client_socket):
 
     content += """
     <script>
-        var hostAndPort=document.location.host;
+        var hostAndPort = document.location.host;
         function update_fund(){
             window.open("http://"+hostAndPort+"/updateFund","_blank");
+        }
+        
+        function del_fund(obj) {
+            const fundcode = obj.parentNode.parentNode.id;
+            const url = "http://"+hostAndPort+"/deleteFund?fundcode=" + fundcode
+            const request = new XMLHttpRequest();
+            request.onload = function() {
+                if (request.status == 200) {
+                    alert("删除成功");
+                    obj.parentNode.parentNode.remove();
+                }
+            }
+            request.open("GET", url);
+            request.send(null);
         }
     
         var fresh = true;
@@ -131,10 +146,25 @@ def refund_list(client_socket):
     client_socket.close()
 
 
-def refund_update(client_socket, request_params):
+def save_fund(fundcode: str, share: str):
+    """
+    保存并返回基金对象
+    :param fundcode: 基金编码
+    :param share: 基金净值
+    :return:
+    """
+    fund = fund_search.get_fund_detail(fundcode, share)
+    if fund is None:
+        raise Exception("未成功获取到基金详情，基金库中可能尚未维护该基金！")
+    else:
+        fund_properties = FundProperties(fund.code, fund.share, fund.name)
+        file_helper.write_fund_properties_to_file(file_name, fund_properties)
+        return fund
+
+
+def refund_update(request_params: str):
     """
     修改基金净值方法
-    :param client_socket: 套接字对象
     :param request_params: 请求参数
     :return:
     """
@@ -156,13 +186,12 @@ def refund_update(client_socket, request_params):
 
     if fundcode != '' and share != '':
         # 获取基金配置对象，并写入配置文件
-        fund = fund_search.get_fund_detail(fundcode, share)
-        if fund is None:
-            content = fund_view.update_failed_page("未成功获取到基金详情，基金库中可能尚未维护该基金！")
-        else:
-            fund_properties = FundProperties(fundcode, share, fund.name)
-            file_helper.write_fund_properties_to_file(file_name, fund_properties)
+        try:
+            fund = save_fund(fundcode, share)
             content = fund_view.update_success_page(fund)
+        except Exception as e:
+            content = fund_view.update_failed_page(e)
+
         # 构造响应数据
         response_start_line = "HTTP/1.1 200 OK\r\n"
         response_headers = "Server: My server\r\n"
@@ -184,10 +213,38 @@ def refund_update(client_socket, request_params):
         client_socket.close()
 
 
-def refund_update_page(client_socket):
+def refund_delete(request_params: str):
+    """
+    基金删除方法
+    :param request_params: 请求参数
+    :return:
+    """
+    fundcode = ""
+    request_params = request_params.split("?")[1]
+    print(f"执行基金删除，请求参数为：{request_params}")
+    # 解析请求参数
+    request_param_arr = request_params.split("&")
+    for param in request_param_arr:
+        param_arr = param.split("=")
+        param_name = param_arr[0]
+        if param_name == "fundcode":
+            fundcode = param_arr[1]
+        else:
+            print("错误的参数，忽略")
+    file_helper.remove_fund_properties_from_file(file_name, fundcode)
+    # 构造响应数据
+    response_start_line = "HTTP/1.1 200 OK\r\n"
+    response_headers = "Server: My server\r\n"
+    response_body = response_start_line + response_headers + "\r\n"
+    # 向客户端返回响应数据
+    client_socket.send(bytes(response_body, "gbk"))
+    # 关闭客户端连接
+    client_socket.close()
+
+
+def refund_update_page():
     """
     基金修改页面
-    :param client_socket:
     :return:
     """
     # 构造响应数据
@@ -203,30 +260,33 @@ def refund_update_page(client_socket):
     client_socket.close()
 
 
-def router_handler(request_data_header_url, client_socket):
+def router_handler(request_data_header_url: str):
     """
     地址路由处理器
-    :param request_data_header_url:
-    :param client_socket:
+    :param request_data_header_url: 请求路径
     :return:
     """
     if request_data_header_url == "/":
-        refund_list(client_socket)
+        refund_list()
     elif request_data_header_url.startswith("/updateFund"):
-        refund_update_page(client_socket)
+        refund_update_page()
+    elif request_data_header_url.startswith("/deleteFund"):
+        request_params = request_data_header_url.split("/deleteFund")[1:]
+        refund_delete(request_params[0])
     elif request_data_header_url.startswith("/update"):
         # 获取update后的请求参数
         request_params = request_data_header_url.split("/update")[1:]
-        refund_update(client_socket, request_params[0])
+        refund_update(request_params[0])
 
 
-def handle_client(client_socket):
+def handle_client(c_socket: object):
     """
     处理客户端请求
-    :param client_socket:
     :return:
     """
-    request_data = client_socket.recv(1024)
+    global client_socket
+    client_socket = c_socket
+    request_data = c_socket.recv(1024)
     request_data_json_str = request_data.decode()
 
     # 解析客户端请求，获取并处理请求
@@ -235,7 +295,7 @@ def handle_client(client_socket):
             request_data_header = line.split(" ")
             # 获取请求路径，作路由处理
             request_data_header_url = request_data_header[1]
-            router_handler(request_data_header_url, client_socket)
+            router_handler(request_data_header_url)
             break
         else:
             continue
@@ -247,7 +307,7 @@ if __name__ == "__main__":
     server_socket.listen(128)
 
     while True:
-        client_socket, client_address = server_socket.accept()
-        handle_client_process = Process(target=handle_client, args=(client_socket,))
+        c_socket, client_address = server_socket.accept()
+        handle_client_process = Process(target=handle_client, args=(c_socket,))
         handle_client_process.start()
-        client_socket.close()
+        c_socket.close()

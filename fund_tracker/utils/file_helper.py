@@ -3,9 +3,10 @@ from shutil import move
 from tempfile import mkstemp
 
 from fund_tracker.pojo import fund_properties
+from fund_tracker.pojo.fund_properties import FundProperties
 
 
-def replace_kv_properties(file_name, key, value):
+def replace_kv_properties(file_name: str, key: str, value: str):
     """
     替换文件中指定键值
     :param file_name: 文件名称
@@ -25,7 +26,7 @@ def replace_kv_properties(file_name, key, value):
     move(abs_path, file_name)
 
 
-def read_properties_to_dict(file_name):
+def read_properties_to_dict(file_name: str):
     """
     将文件读取到dict中
     :param file_name: 文件名称
@@ -43,7 +44,30 @@ def read_properties_to_dict(file_name):
     return codes
 
 
-def write_fund_properties_to_file(file_name, fund_properties: fund_properties.FundProperties):
+def read_properties_to_list(file_name: str):
+    """
+    将文件所有基金读取到list中
+    :param file_name: 文件名称
+    :return: fund
+    """
+    fund_list = []
+    f = open(file_name, "r")
+
+    fund = None
+    for line in f:
+        if line.startswith("#"):
+            fund = FundProperties()
+            fund.annotation = line
+            continue
+        line = line.rstrip("\n")
+        fund.code = line.split("=")[0]
+        fund.share = line.split("=")[1]
+        fund_list.append(fund)
+    f.close()
+    return fund_list
+
+
+def write_fund_properties_to_file(file_name: str, fund_properties: fund_properties.FundProperties):
     """
     将基金配置对象写入指定文件
     :param file_name: 文件名称
@@ -70,3 +94,30 @@ def write_fund_properties_to_file(file_name, fund_properties: fund_properties.Fu
         f_w.write("# " + fund_properties.annotation + "\n")
         f_w.write(fund_properties.code + "=" + fund_properties.share + "\n")
         f_w.close()
+
+
+def remove_fund_properties_from_file(file_name: str, code: str):
+    """
+    删除指定文件的基金
+    :param code: 基金编码
+    :param file_name: 文件名称
+    :return:
+    """
+
+    fund_list = read_properties_to_list(file_name)
+    rm_index = -1
+    for i in range(len(fund_list)):
+        if fund_list[i].code == code:
+            rm_index = i
+    if rm_index != -1:
+        fund_list.pop(rm_index)
+
+    # 创建临时文件
+    fh, abs_path = mkstemp()
+    with open(fh, "w") as new_file:
+        for fund in fund_list:
+            new_file.write(fund.annotation)
+            line = fund.code + "=" + fund.share + "\n"
+            new_file.write(line)
+    remove(file_name)
+    move(abs_path, file_name)
