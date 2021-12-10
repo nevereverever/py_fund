@@ -7,7 +7,48 @@ from multiprocessing import Process
 
 # 基金份额文件
 file_name = "myfund.properties"
-client_socket = None
+client_socket: socket
+
+
+def handle_client(c_socket: socket):
+    """
+    处理客户端请求
+    :return:
+    """
+    global client_socket
+    client_socket = c_socket
+    request_data = c_socket.recv(1024)
+    request_data_json_str = request_data.decode()
+
+    # 解析客户端请求，获取并处理请求
+    for line in request_data_json_str.split("\r\n"):
+        if line.startswith("GET"):
+            request_data_header = line.split(" ")
+            # 获取请求路径，作路由处理
+            request_data_header_url = request_data_header[1]
+            router_handler(request_data_header_url)
+            break
+        else:
+            continue
+
+
+def router_handler(request_data_header_url: str):
+    """
+    地址路由处理器
+    :param request_data_header_url: 请求路径
+    :return:
+    """
+    if request_data_header_url == "/":
+        refund_list()
+    elif request_data_header_url.startswith("/updateFund"):
+        refund_update_page()
+    elif request_data_header_url.startswith("/deleteFund"):
+        request_params = request_data_header_url.split("/deleteFund")[1:]
+        refund_delete(request_params[0])
+    elif request_data_header_url.startswith("/update"):
+        # 获取update后的请求参数
+        request_params = request_data_header_url.split("/update")[1:]
+        refund_update(request_params[0])
 
 
 def refund_list():
@@ -135,8 +176,6 @@ def refund_list():
                 },60000);
             }
         }
-        
-        
     </script>
     """
 
@@ -190,7 +229,7 @@ def refund_update(request_params: str):
             fund = save_fund(fundcode, share)
             content = fund_view.update_success_page(fund)
         except Exception as e:
-            content = fund_view.update_failed_page(e)
+            content = fund_view.update_failed_page(str(e))
 
         # 构造响应数据
         response_start_line = "HTTP/1.1 200 OK\r\n"
@@ -258,47 +297,6 @@ def refund_update_page():
     client_socket.send(bytes(response_body + content, "gbk"))
     # 关闭客户端连接
     client_socket.close()
-
-
-def router_handler(request_data_header_url: str):
-    """
-    地址路由处理器
-    :param request_data_header_url: 请求路径
-    :return:
-    """
-    if request_data_header_url == "/":
-        refund_list()
-    elif request_data_header_url.startswith("/updateFund"):
-        refund_update_page()
-    elif request_data_header_url.startswith("/deleteFund"):
-        request_params = request_data_header_url.split("/deleteFund")[1:]
-        refund_delete(request_params[0])
-    elif request_data_header_url.startswith("/update"):
-        # 获取update后的请求参数
-        request_params = request_data_header_url.split("/update")[1:]
-        refund_update(request_params[0])
-
-
-def handle_client(c_socket: object):
-    """
-    处理客户端请求
-    :return:
-    """
-    global client_socket
-    client_socket = c_socket
-    request_data = c_socket.recv(1024)
-    request_data_json_str = request_data.decode()
-
-    # 解析客户端请求，获取并处理请求
-    for line in request_data_json_str.split("\r\n"):
-        if line.startswith("GET"):
-            request_data_header = line.split(" ")
-            # 获取请求路径，作路由处理
-            request_data_header_url = request_data_header[1]
-            router_handler(request_data_header_url)
-            break
-        else:
-            continue
 
 
 if __name__ == "__main__":
