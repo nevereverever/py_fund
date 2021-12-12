@@ -52,7 +52,7 @@ def router_handler(c_socket: socket, request: Request):
 
     # 非登录的权限需要进行鉴权
     try:
-        cookie = request.request_header_params["Cookie"].split("; ")[1].split("=")[1]
+        cookie = request.request_header_params["Cookie"].split("=")[1]
     except Exception:
         login_page(c_socket)
         return
@@ -60,7 +60,7 @@ def router_handler(c_socket: socket, request: Request):
         login_page(c_socket)
         return
     current_login_user = get_login_user(cookie)
-    if request.url == "/list":
+    if request.url == "/" or request.url == "/list":
         refund_list(c_socket, current_login_user)
     elif request.url.startswith("/updateFund"):
         refund_update_page(c_socket, current_login_user)
