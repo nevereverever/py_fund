@@ -17,7 +17,7 @@ def replace_kv_properties(file_name: str, key: str, value: str):
     # 创建临时文件
     fh, abs_path = mkstemp()
 
-    with open(file_name, "r") as f_r, open(fh, "w") as new_file:
+    with open(file_name, "r", encoding="utf-8") as f_r, open(fh, "w", encoding="utf-8") as new_file:
         for line in f_r:
             if key + "=" in line:
                 line = key + "=" + value + "\n"
@@ -54,7 +54,7 @@ def read_properties_to_list(file_name: str):
     :return: fund
     """
     fund_list = []
-    f = open(file_name, "r")
+    f = open(file_name, "r", encoding="utf-8")
 
     fund = None
     for line in f:
@@ -93,7 +93,7 @@ def write_fund_properties_to_file(file_name: str, fund_properties: fund_properti
         replace_kv_properties(file_name, fund_properties.code, fund_properties.share)
     else:
         print(f"未找到需更新的键值：{fund_properties.code}-{fund_properties.share}，即将添加新的键值")
-        f_w = open(file_name, "a", encoding='utf-8')
+        f_w = open(file_name, "a", encoding="utf-8")
         f_w.write("# " + fund_properties.annotation + "\n")
         f_w.write(fund_properties.code + "=" + fund_properties.share + "\n")
         f_w.close()

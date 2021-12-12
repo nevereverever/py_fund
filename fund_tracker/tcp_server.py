@@ -1,10 +1,10 @@
 import socket
+from threading import Thread
 from fund_tracker.service import fund_search
 from fund_tracker.utils import file_helper
 from fund_tracker.pojo.fund_properties import FundProperties
 from fund_tracker.pojo.request import Request
 from fund_tracker.view import fund_view
-from multiprocessing import Process
 import hashlib
 
 # 用户文件
@@ -12,69 +12,69 @@ user_file_name = "user.properties"
 # 用户数据
 file_dir = "fund_data/"
 file_name = ".properties"
-cookie_dict = {"9bad41710724cf6511abde2a52416881": "zhangsan"}
-client_socket: socket
+cookie_dict = {}
 
 
 def handle_client(c_socket: socket):
     """
     处理客户端请求
+    :param c_socket
     :return:
     """
-    global client_socket
-    client_socket = c_socket
     request_data = c_socket.recv(1024)
     request_data_json_str = request_data.decode()
     request = Request.analyse_request(Request(), request_data_json_str)
 
     # 非登录请求且Cookie为空，需要跳转登录
     if request.url.startswith("/login") is False and "Cookie" not in request.request_header_params:
-        login_page()
+        login_page(c_socket)
         return
 
     # 目前暂时只处理GET方法的请求
     if request.method == "GET":
-        router_handler(request)
+        router_handler(c_socket, request)
     else:
         print("暂未实现")
 
 
-def router_handler(request: Request):
+def router_handler(c_socket: socket, request: Request):
     """
     地址路由处理器
-    :param request_data_header_url: 请求路径
+    :param c_socket:
+    :param request: 请求对象
     :return:
     """
     # 处理登录请求
     if request.url.startswith("/login"):
         request_params = request.url.split("/login")[1:]
-        login(request_params[0])
+        login(c_socket, request_params[0])
         return
 
     # 非登录的权限需要进行鉴权
     cookie = request.request_header_params["Cookie"]
     if login_handler(cookie) is False:
-        login_page()
+        login_page(c_socket)
         return
     current_login_user = get_login_user(cookie)
     if request.url == "/":
-        refund_list(current_login_user)
+        refund_list(c_socket, current_login_user)
     elif request.url.startswith("/updateFund"):
-        refund_update_page(current_login_user)
+        refund_update_page(c_socket, current_login_user)
     elif request.url.startswith("/deleteFund"):
         request_params = request.url.split("/deleteFund")[1:]
-        refund_delete(current_login_user, request_params[0])
+        refund_delete(c_socket, current_login_user, request_params[0])
     elif request.url.startswith("/update"):
         # 获取update后的请求参数
         request_params = request.url.split("/update")[1:]
-        refund_update(current_login_user, request_params[0])
+        refund_update(c_socket, current_login_user, request_params[0])
     elif request.url.startswith("/logout"):
-        logout(cookie)
+        logout(c_socket, cookie)
 
 
-def refund_list(current_login_user: str):
+def refund_list(client_socket: socket, current_login_user: str):
     """
     获取基金列表
+    :param client_socket:
     :param current_login_user: 当前登录用户
     :return:
     """
@@ -238,9 +238,10 @@ def save_fund(current_login_user: str, fundcode: str, share: str):
         return fund
 
 
-def login(request_params: str):
+def login(client_socket: socket, request_params: str):
     """
     登录方法
+    :param client_socket:
     :param request_params:
     :return:
     """
@@ -296,9 +297,10 @@ def login(request_params: str):
         client_socket.close()
 
 
-def logout(cookie: str):
+def logout(client_socket: socket, cookie: str):
     """
     移除cookie
+    :param client_socket:
     :param cookie:
     :return:
     """
@@ -346,9 +348,10 @@ def get_login_user(cookie: str):
     return None
 
 
-def refund_update(current_login_user: str, request_params: str):
+def refund_update(client_socket: socket, current_login_user: str, request_params: str):
     """
     修改基金净值方法
+    :param client_socket:
     :param current_login_user: 当前登录用户
     :param request_params: 请求参数
     :return:
@@ -398,9 +401,10 @@ def refund_update(current_login_user: str, request_params: str):
         client_socket.close()
 
 
-def refund_delete(current_login_user: str, request_params: str):
+def refund_delete(client_socket: socket, current_login_user: str, request_params: str):
     """
     基金删除方法
+    :param client_socket:
     :param current_login_user: 当前登录用户
     :param request_params: 请求参数
     :return:
@@ -428,7 +432,12 @@ def refund_delete(current_login_user: str, request_params: str):
     client_socket.close()
 
 
-def login_page():
+def login_page(client_socket: socket):
+    """
+    登录界面请求
+    :param client_socket:
+    :return:
+    """
     # 构造响应数据
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
@@ -442,9 +451,10 @@ def login_page():
     client_socket.close()
 
 
-def refund_update_page(current_login_user: str):
+def refund_update_page(client_socket: socket, current_login_user: str):
     """
     基金修改页面
+    :param client_socket:
     :param current_login_user: 当前登录用户
     :return:
     """
@@ -468,6 +478,7 @@ if __name__ == "__main__":
 
     while True:
         c_socket, client_address = server_socket.accept()
-        handle_client_process = Process(target=handle_client, args=(c_socket,))
-        handle_client_process.start()
-        c_socket.close()
+        thread = Thread(target=handle_client, args=(c_socket,))
+        # 设置成守护线程
+        thread.setDaemon(True)
+        thread.start()
