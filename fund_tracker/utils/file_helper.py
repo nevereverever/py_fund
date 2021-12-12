@@ -33,14 +33,17 @@ def read_properties_to_dict(file_name: str):
     :return: dict
     """
     codes = {}
-    f = open(file_name, "r")
-    for line in f:
-        # 忽略注释
-        if line.startswith("#") or line.strip() == '':
-            continue
-        line = line.rstrip("\n")
-        codes[line.split("=")[0]] = line.split("=")[1]
-    f.close()
+    try:
+        f = open(file_name, "r", encoding="utf-8")
+        for line in f:
+            # 忽略注释
+            if line.startswith("#") or line.strip() == '':
+                continue
+            line = line.rstrip("\n")
+            codes[line.split("=")[0]] = line.split("=")[1]
+        f.close()
+    except FileNotFoundError:
+        open(file_name, "w", encoding="utf-8")
     return codes
 
 
