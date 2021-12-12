@@ -51,12 +51,16 @@ def router_handler(c_socket: socket, request: Request):
         return
 
     # 非登录的权限需要进行鉴权
-    cookie = request.request_header_params["Cookie"]
+    try:
+        cookie = request.request_header_params["Cookie"].split("; ")[1].split("=")[1]
+    except Exception:
+        login_page(c_socket)
+        return
     if login_handler(cookie) is False:
         login_page(c_socket)
         return
     current_login_user = get_login_user(cookie)
-    if request.url == "/":
+    if request.url == "/list":
         refund_list(c_socket, current_login_user)
     elif request.url.startswith("/updateFund"):
         refund_update_page(c_socket, current_login_user)
@@ -267,8 +271,8 @@ def login(client_socket: socket, request_params: str):
             # 构造响应数据
             response_start_line = "HTTP/1.1 302 JUMP\r\n"
             response_headers = "Server: My server\r\n"
-            response_headers += "Set-Cookie: {}\r\n".format(cookie)
-            response_headers += "Location: {}\r\n".format("/")
+            response_headers += "Set-Cookie: JSESSIONID={}; HttpOnly\r\n".format(cookie)
+            response_headers += "Location: {}\r\n".format("/list")
             response_body = response_start_line + response_headers + "\r\n"
             # 向客户端返回响应数据
             client_socket.send(bytes(response_body + "登录成功", "gbk"))
@@ -309,6 +313,7 @@ def logout(client_socket: socket, cookie: str):
 
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
+    response_headers += "Set-Cookie: \r\n"
     response_body = response_start_line + response_headers + "\r\n"
 
     # 向客户端返回响应数据
