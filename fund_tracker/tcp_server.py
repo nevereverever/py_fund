@@ -90,9 +90,9 @@ def refund_list(client_socket: socket, current_login_user: str):
     # 构造html内容
     content = """
     <html>
-        <header>
+        <head>
             <title>基金</title>
-        </header>
+        </head>
         <body>
             <div>
                 <div>
@@ -482,7 +482,7 @@ def refund_update_page(client_socket: socket, current_login_user: str):
 
 if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("", 8888))
+    server_socket.bind(("", 8000))
     server_socket.listen(128)
 
     while True:

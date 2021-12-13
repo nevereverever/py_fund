@@ -9,7 +9,8 @@ def login_page():
     content = """
     <html lang="en">  
         <head>  
-            <meta charset="UTF-8">  
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
             <title>Login</title>  
             <style type="text/css">
                 html{   
@@ -96,7 +97,8 @@ def fund_update_page(current_login_user):
     """
     content = """
     <html>
-        <header>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
             <title>基金更新(
     """
     content += current_login_user
@@ -148,7 +150,7 @@ def fund_update_page(current_login_user):
                             box-shadow: 0 2px 0 rgba(0,0,0,0.045);
                         }
             </style>
-        </header>
+        </head>
         <body>
             <form action="update" method="GET">
             <div>
@@ -180,9 +182,9 @@ def update_success_page(fund: Fund):
     # 构造html内容
     content = """
         <html>
-            <header>
+            <head>
                 <title>更新成功</title>
-            </header>
+            </head>
             <style type="text/css">
                             .ant-btn {
                                 line-height: 1.499;
@@ -252,9 +254,9 @@ def update_failed_page(reason: str):
     """
     content = """
         <html>
-            <header>
+            <head>
                 <title>更新失败</title>
-            </header>
+            </head>
             <style type="text/css">
                             .ant-btn {
                                 line-height: 1.499;
