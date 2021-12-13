@@ -1,4 +1,5 @@
 import socket
+from datetime import datetime, timedelta
 from threading import Thread
 from fund_tracker.service import fund_search
 from fund_tracker.utils import file_helper
@@ -72,7 +73,7 @@ def router_handler(c_socket: socket, request: Request):
         request_params = request.url.split("/update")[1:]
         refund_update(c_socket, current_login_user, request_params[0])
     elif request.url.startswith("/logout"):
-        logout(c_socket, cookie)
+        logout(c_socket)
 
 
 def refund_list(client_socket: socket, current_login_user: str):
@@ -271,7 +272,9 @@ def login(client_socket: socket, request_params: str):
             # 构造响应数据
             response_start_line = "HTTP/1.1 302 JUMP\r\n"
             response_headers = "Server: My server\r\n"
-            response_headers += "Set-Cookie: JSESSIONID={}; HttpOnly\r\n".format(cookie)
+            expire_time = (datetime.now() + timedelta(hours=1)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+            response_headers += "Set-Cookie: JSESSIONID={}; expire={}; Max-Age={}; HttpOnly\r\n"\
+                .format(cookie, expire_time, 3600)
             response_headers += "Location: {}\r\n".format("/list")
             response_body = response_start_line + response_headers + "\r\n"
             # 向客户端返回响应数据
@@ -301,19 +304,20 @@ def login(client_socket: socket, request_params: str):
         client_socket.close()
 
 
-def logout(client_socket: socket, cookie: str):
+def logout(client_socket: socket):
     """
     移除cookie
     :param client_socket:
-    :param cookie:
     :return:
     """
-    if cookie in cookie_dict:
-        del cookie_dict[cookie]
+    # if cookie in cookie_dict:
+    #     del cookie_dict[cookie]
 
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
-    response_headers += "Set-Cookie: \r\n"
+    expire_time = (datetime.now() + timedelta(hours=-1)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+    response_headers += "Set-Cookie: JSESSIONID={}; expire={}; HttpOnly\r\n" \
+        .format("", expire_time)
     response_body = response_start_line + response_headers + "\r\n"
 
     # 向客户端返回响应数据
@@ -478,7 +482,7 @@ def refund_update_page(client_socket: socket, current_login_user: str):
 
 if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("", 8000))
+    server_socket.bind(("", 8888))
     server_socket.listen(128)
 
     while True:
