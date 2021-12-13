@@ -91,6 +91,11 @@ def login_page():
 
 
 def fund_list(fund_dict: dict):
+    """
+    基金列表
+    :param fund_dict:
+    :return:
+    """
     content = """
     <html>
         <head>
@@ -124,7 +129,7 @@ def fund_list(fund_dict: dict):
     """
     today_income = 0.0
     # 遍历拼接每行数据
-    for k, v in fund_dict.items():
+    for v in fund_dict.values():
         # 收入大于0为红色，否则为绿色
         current_fund_income = round(float(v.value) * float(v.share) * float(v.current_value) / 100, 2)
         # 今日收入等于每个基金的估值*份额的累加
@@ -219,6 +224,7 @@ def fund_list(fund_dict: dict):
         }
     </script>
     """
+    return content
 
 
 def fund_update_page(current_login_user):
