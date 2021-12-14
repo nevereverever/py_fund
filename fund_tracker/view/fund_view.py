@@ -616,7 +616,7 @@ def error_msg_page(error_msg: str):
                 </style>
             <body>
                 <h3>出错了</h3>
-                <p>：
+                <p>
                 """
     content += error_msg + "</p>"
     content += """

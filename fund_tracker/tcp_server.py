@@ -122,7 +122,7 @@ def login(client_socket: socket, request_body_params: dict):
     password = request_body_params.get("password")
 
     if username is None or password is None:
-        error_500_response(client_socket, "用户名/密码不可为空！")
+        error_500_response(client_socket, fund_view.error_msg_page("用户名/密码不可为空！"))
 
     users = file_helper.read_properties_to_dict(user_file_name)
     if username in users:
@@ -144,9 +144,9 @@ def login(client_socket: socket, request_body_params: dict):
             # 关闭客户端连接
             client_socket.close()
         else:
-            error_500_response(client_socket, "登录失败，密码错误！")
+            error_500_response(client_socket, fund_view.error_msg_page("登录失败，密码错误！"))
     else:
-        error_500_response(client_socket, "用户库无此账号，请联系管理员")
+        error_500_response(client_socket, fund_view.error_msg_page("用户库无此账号，请联系管理员"))
 
 
 def logout(client_socket: socket):
@@ -298,7 +298,7 @@ def error_500_response(client_socket: socket, content: str):
 
 if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("", 8888))
+    server_socket.bind(("", 8000))
     server_socket.listen(128)
 
     while True:
