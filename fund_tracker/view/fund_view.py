@@ -45,8 +45,7 @@ def login_page():
                     margin: 0.67em 0;   
                 }   
                 input{   
-                    width: 278px;   
-                    height: 18px;   
+                    width: 278px;
                     margin-bottom: 10px;   
                     outline: none;   
                     padding: 10px;   
@@ -77,11 +76,11 @@ def login_page():
         </head>  
         <body>  
             <div id="login">  
-                <h1>Login</h1>  
-                <form method="get" action="login">  
-                    <input type="text" required="required" placeholder="UserName" name="username"></input>  
-                    <input type="password" required="required" placeholder="Password" name="password"></input>  
-                    <button class="but" type="submit">Login</button>  
+                <h1>搞基网</h1>  
+                <form method="get" action="login">
+                    <input type="text" required="required" placeholder="用户名" name="username"></input>  
+                    <input type="password" required="required" placeholder="密码" name="password"></input>  
+                    <button class="but" type="submit">登录</button>  
                 </form>  
             </div>  
         </body>  
@@ -100,32 +99,56 @@ def fund_list(fund_dict: dict):
     <html>
         <head>
             <title>基金</title>
+            <style type="text/css">
+                table {
+                    border-collapse: collapse;
+                    margin: 0 auto;
+                    text-align: center;
+                }
+                table td, table th {
+                    border: 1px solid #cad9ea;
+                    color: #666;
+                    height: 30px;
+                }
+                table thead th {
+                    background-color: #CCE8EB;
+                    width: 100px;
+                }
+                table tr:nth-child(odd) {
+                    background: #fff;
+                }
+                table tr:nth-child(even) {
+                    background: #F5FAFA;
+                }
+            </style>
         </head>
         <body>
-            <div>
+            <div style="display: flex;justify-content: center;">
                 <div>
-                    <button onclick="javascript: start_stop_fresh()">开始/停止刷新</button>
-                    <button onclick="javascript: window.location.reload()">手动刷新</button>
-                    <button onclick="update_fund()">基金份额更新</button>
-                    <button onclick="logout()">登出</button>
-                </div>
-                <table id="content" border="1px">
-                    <thead>
-                        <tr>
-                            <td>基金编码</td>
-                            <td>基金名称</td>
-                            <td>上个交易日</td>
-                            <td>上次净值</td>
-                            <td>实时净值</td>
-                            <td>净值更新时间</td>
-                            <td>估算净值</td>
-                            <td>买入份额</td>
-                            <td>实时金额</td>
-                            <td>估算盈亏</td>
-                            <td>操作</td>
-                        </tr>
-                    </thead>
-                    <tbody>
+                    <div style="display: inline-block;margin-bottom: 5px;">
+                        <button onclick="javascript: start_stop_fresh()">开始/停止刷新</button>
+                        <button onclick="javascript: window.location.reload()">手动刷新</button>
+                        <button onclick="update_fund()">基金份额更新</button>
+                        <button onclick="logout()">登出</button>
+                    </div>
+                    
+                    <table id="fund-table" border="1px">
+                        <thead>
+                            <tr>
+                                <td>基金编码</td>
+                                <td>基金名称</td>
+                                <td>上个交易日</td>
+                                <td>上次净值</td>
+                                <td>实时净值</td>
+                                <td>净值更新时间</td>
+                                <td>估算净值</td>
+                                <td>买入份额</td>
+                                <td>实时金额</td>
+                                <td>估算盈亏</td>
+                                <td>操作</td>
+                            </tr>
+                        </thead>
+                        <tbody>
     """
     today_income = 0.0
     # 遍历拼接每行数据
@@ -157,14 +180,16 @@ def fund_list(fund_dict: dict):
             content += "<td><b style='color:green'>"
         content += str(current_fund_income) + "</b></td><td><button onclick='del_fund(this)'>删除" + "</button></td></tr>"
     content += """</tbody>
-    </table><div id="sum" style="float:left">"""
+        </table>
+    <div id="sum" style="float:left">
+    """
 
     if today_income > 0.0:
         content += "<b style='color:red'>"
     else:
         content += "<b style='color:green'>"
 
-    content += "本日总收入：" + str(round(today_income, 2)) + "</b></div></div></body></html>"
+    content += "本日总收入：" + str(round(today_income, 2)) + "</b></div></div></body></div></html>"
 
     content += """
     <script>

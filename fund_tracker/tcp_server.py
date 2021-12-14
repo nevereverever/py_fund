@@ -327,7 +327,7 @@ def login_page(client_socket: socket):
     content = fund_view.login_page()
 
     # 向客户端返回响应数据
-    client_socket.send(bytes(response_body + content, "gbk"))
+    client_socket.send(bytes(response_body + content, "utf-8"))
     # 关闭客户端连接
     client_socket.close()
 
