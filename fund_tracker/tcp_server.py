@@ -34,8 +34,8 @@ def handle_client(c_socket: socket):
     # 目前暂时只处理GET方法的请求
     if request.method == "GET":
         router_handler(c_socket, request)
-    else:
-        print("暂未实现")
+    elif request.method == "POST":
+        router_handler(c_socket, request)
 
 
 def router_handler(c_socket: socket, request: Request):
@@ -47,9 +47,12 @@ def router_handler(c_socket: socket, request: Request):
     """
     # 处理登录请求
     if request.url.startswith("/login"):
-        request_params = request.url.split("/login")[1:]
-        login(c_socket, request_params[0])
-        return
+        if request.method == "POST":
+            login(c_socket, request.request_body_params)
+            return
+        else:
+            success_200_response(c_socket, fund_view.un_support_method_page(request.method))
+            return
 
     # 非登录的权限需要进行鉴权
     try:
@@ -57,21 +60,24 @@ def router_handler(c_socket: socket, request: Request):
     except Exception:
         login_page(c_socket)
         return
+    # 登录拦截
     if login_handler(cookie) is False:
         login_page(c_socket)
         return
+    # 从cookie获取登录用户
     current_login_user = get_login_user(cookie)
     if request.url == "/" or request.url == "/list":
         refund_list(c_socket, current_login_user)
-    elif request.url.startswith("/updateFund"):
-        refund_update_page(c_socket, current_login_user)
     elif request.url.startswith("/deleteFund"):
-        request_params = request.url.split("/deleteFund")[1:]
-        refund_delete(c_socket, current_login_user, request_params[0])
+        if request.method == "POST":
+            refund_delete(c_socket, current_login_user, request.request_body_params)
+        else:
+            success_200_response(c_socket, fund_view.un_support_method_page(request.method))
     elif request.url.startswith("/update"):
-        # 获取update后的请求参数
-        request_params = request.url.split("/update")[1:]
-        refund_update(c_socket, current_login_user, request_params[0])
+        if request.method == "GET":
+            refund_update_page(c_socket, current_login_user)
+        elif request.method == "POST":
+            refund_update(c_socket, current_login_user, request.request_body_params)
     elif request.url.startswith("/logout"):
         logout(c_socket)
 
@@ -83,19 +89,9 @@ def refund_list(client_socket: socket, current_login_user: str):
     :param current_login_user: 当前登录用户
     :return:
     """
-    # 构造响应数据
-    response_start_line = "HTTP/1.1 200 OK\r\n"
-    response_headers = "Server: My server\r\n"
-    response_body = response_start_line + response_headers + "\r\n"
     codes = file_helper.read_properties_to_dict(file_dir + current_login_user + file_name)
     fund_dict = fund_search.get_fund_dict(codes)
-    # 构造html内容
-    content = fund_view.fund_list(fund_dict)
-
-    # 向客户端返回响应数据
-    client_socket.send(bytes(response_body + content, "gbk"))
-    # 关闭客户端连接
-    client_socket.close()
+    success_200_response(client_socket, fund_view.fund_list(fund_dict))
 
 
 def save_fund(current_login_user: str, fundcode: str, share: str):
@@ -115,27 +111,18 @@ def save_fund(current_login_user: str, fundcode: str, share: str):
         return fund
 
 
-def login(client_socket: socket, request_params: str):
+def login(client_socket: socket, request_body_params: dict):
     """
     登录方法
     :param client_socket:
-    :param request_params:
+    :param request_body_params:
     :return:
     """
-    username = ""
-    password = ""
-    request_params = request_params.split("?")[1]
-    # 解析请求参数
-    request_param_arr = request_params.split("&")
-    for param in request_param_arr:
-        param_arr = param.split("=")
-        param_name = param_arr[0]
-        if param_name == "username":
-            username = param_arr[1]
-        elif param_name == "password":
-            password = param_arr[1]
-        else:
-            print("错误的参数，忽略")
+    username = request_body_params.get("username")
+    password = request_body_params.get("password")
+
+    if username is None or password is None:
+        error_500_response(client_socket, "用户名/密码不可为空！")
 
     users = file_helper.read_properties_to_dict(user_file_name)
     if username in users:
@@ -157,23 +144,9 @@ def login(client_socket: socket, request_params: str):
             # 关闭客户端连接
             client_socket.close()
         else:
-            # 构造响应数据
-            response_start_line = "HTTP/1.1 500 ERROR\r\n"
-            response_headers = "Server: My server\r\n"
-            response_body = response_start_line + response_headers + "\r\n"
-            # 向客户端返回响应数据
-            client_socket.send(bytes(response_body + "登录失败，密码错误", "gbk"))
-            # 关闭客户端连接
-            client_socket.close()
+            error_500_response(client_socket, "登录失败，密码错误！")
     else:
-        # 构造响应数据
-        response_start_line = "HTTP/1.1 500 ERROR\r\n"
-        response_headers = "Server: My server\r\n"
-        response_body = response_start_line + response_headers + "\r\n"
-        # 向客户端返回响应数据
-        client_socket.send(bytes(response_body + "无此账号", "gbk"))
-        # 关闭客户端连接
-        client_socket.close()
+        error_500_response(client_socket, "用户库无此账号，请联系管理员")
 
 
 def logout(client_socket: socket):
@@ -223,66 +196,41 @@ def get_cookie(username: str, password: str):
 
 
 def get_login_user(cookie: str):
-    global cookie_dict
-    if cookie in cookie_dict:
-        return cookie_dict[cookie]
-    return None
-
-
-def refund_update(client_socket: socket, current_login_user: str, request_params: str):
     """
-    修改基金净值方法
-    :param client_socket:
-    :param current_login_user: 当前登录用户
-    :param request_params: 请求参数
+    获取当前登录用户
+    :param cookie: cookie
     :return:
     """
-    fundcode = ""
-    share = ""
-    request_params = request_params.split("?")[1]
-    print(f"执行基金修改，请求参数为：{request_params}")
-    # 解析请求参数
-    request_param_arr = request_params.split("&")
-    for param in request_param_arr:
-        param_arr = param.split("=")
-        param_name = param_arr[0]
-        if param_name == "fundcode":
-            fundcode = param_arr[1]
-        elif param_name == "share":
-            share = param_arr[1]
-        else:
-            print("错误的参数，忽略")
-
-    if fundcode != '' and share != '':
-        # 获取基金配置对象，并写入配置文件
-        try:
-            fund = save_fund(current_login_user, fundcode, share)
-            content = fund_view.update_success_page(fund)
-        except Exception as e:
-            content = fund_view.update_failed_page(str(e))
-
-        # 构造响应数据
-        response_start_line = "HTTP/1.1 200 OK\r\n"
-        response_headers = "Server: My server\r\n"
-        response_body = response_start_line + response_headers + "\r\n"
-        # 向客户端返回响应数据
-        client_socket.send(bytes(response_body + content, "gbk"))
-        # 关闭客户端连接
-        client_socket.close()
-    else:
-        # 构造响应数据
-        response_start_line = "HTTP/1.1 200 OK\r\n"
-        response_headers = "Server: My server\r\n"
-        response_body = response_start_line + response_headers + "\r\n"
-        # 构造html内容
-        content = fund_view.update_failed_page("未成功更新基金份额，基金编码或份额不可为空！")
-        # 向客户端返回响应数据
-        client_socket.send(bytes(response_body + content, "gbk"))
-        # 关闭客户端连接
-        client_socket.close()
+    global cookie_dict
+    return cookie_dict.get(cookie)
 
 
-def refund_delete(client_socket: socket, current_login_user: str, request_params: str):
+def refund_update(client_socket: socket, current_login_user: str, request_body_params: dict):
+    """
+    修改基金净值方法
+    :param request_body_params:
+    :param client_socket:
+    :param current_login_user: 当前登录用户
+    :return:
+    """
+    fundcode = request_body_params.get("fundcode")
+    share = request_body_params.get("share")
+
+    if fundcode is None and share is None:
+        success_200_response(client_socket, fund_view.update_failed_page("未成功更新基金份额，基金编码或份额不可为空！"))
+        return
+
+    # 获取基金配置对象，并写入配置文件
+    try:
+        fund = save_fund(current_login_user, fundcode, share)
+        content = fund_view.update_success_page(fund)
+    except Exception as e:
+        content = fund_view.update_failed_page(str(e))
+
+    success_200_response(client_socket, content)
+
+
+def refund_delete(client_socket: socket, current_login_user: str, request_params: dict):
     """
     基金删除方法
     :param client_socket:
@@ -290,27 +238,9 @@ def refund_delete(client_socket: socket, current_login_user: str, request_params
     :param request_params: 请求参数
     :return:
     """
-    fundcode = ""
-    request_params = request_params.split("?")[1]
-    print(f"执行基金删除，请求参数为：{request_params}")
-    # 解析请求参数
-    request_param_arr = request_params.split("&")
-    for param in request_param_arr:
-        param_arr = param.split("=")
-        param_name = param_arr[0]
-        if param_name == "fundcode":
-            fundcode = param_arr[1]
-        else:
-            print("错误的参数，忽略")
+    fundcode = request_params.get("fundcode")
     file_helper.remove_fund_properties_from_file(file_dir + current_login_user + file_name, fundcode)
-    # 构造响应数据
-    response_start_line = "HTTP/1.1 200 OK\r\n"
-    response_headers = "Server: My server\r\n"
-    response_body = response_start_line + response_headers + "\r\n"
-    # 向客户端返回响应数据
-    client_socket.send(bytes(response_body, "gbk"))
-    # 关闭客户端连接
-    client_socket.close()
+    success_200_response(client_socket, "")
 
 
 def login_page(client_socket: socket):
@@ -319,17 +249,7 @@ def login_page(client_socket: socket):
     :param client_socket:
     :return:
     """
-    # 构造响应数据
-    response_start_line = "HTTP/1.1 200 OK\r\n"
-    response_headers = "Server: My server\r\n"
-    response_body = response_start_line + response_headers + "\r\n"
-    # 构造html内容
-    content = fund_view.login_page()
-
-    # 向客户端返回响应数据
-    client_socket.send(bytes(response_body + content, "utf-8"))
-    # 关闭客户端连接
-    client_socket.close()
+    success_200_response(client_socket, fund_view.login_page())
 
 
 def refund_update_page(client_socket: socket, current_login_user: str):
@@ -339,22 +259,46 @@ def refund_update_page(client_socket: socket, current_login_user: str):
     :param current_login_user: 当前登录用户
     :return:
     """
+    success_200_response(client_socket, fund_view.fund_update_page(current_login_user))
+
+
+def success_200_response(client_socket: socket, content: str):
+    """
+    200响应
+    :param client_socket:
+    :param content:
+    :return:
+    """
     # 构造响应数据
     response_start_line = "HTTP/1.1 200 OK\r\n"
     response_headers = "Server: My server\r\n"
     response_body = response_start_line + response_headers + "\r\n"
-    # 构造html内容
-    content = fund_view.fund_update_page(current_login_user)
-
     # 向客户端返回响应数据
-    client_socket.send(bytes(response_body + content, "gbk"))
+    client_socket.send(bytes(response_body + content, "utf-8"))
+    # 关闭客户端连接
+    client_socket.close()
+
+
+def error_500_response(client_socket: socket, content: str):
+    """
+    500响应
+    :param client_socket:
+    :param content:
+    :return:
+    """
+    # 构造响应数据
+    response_start_line = "HTTP/1.1 500 ERROR\r\n"
+    response_headers = "Server: My server\r\n"
+    response_body = response_start_line + response_headers + "\r\n"
+    # 向客户端返回响应数据
+    client_socket.send(bytes(response_body + content, "utf-8"))
     # 关闭客户端连接
     client_socket.close()
 
 
 if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("", 8000))
+    server_socket.bind(("", 8888))
     server_socket.listen(128)
 
     while True:

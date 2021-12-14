@@ -77,7 +77,7 @@ def login_page():
         <body>  
             <div id="login">  
                 <h1>搞基网</h1>  
-                <form method="get" action="login">
+                <form method="post" action="login">
                     <input type="text" required="required" placeholder="用户名" name="username"></input>  
                     <input type="password" required="required" placeholder="密码" name="password"></input>  
                     <button class="but" type="submit">登录</button>  
@@ -98,6 +98,7 @@ def fund_list(fund_dict: dict):
     content = """
     <html>
         <head>
+            <meta charset="UTF-8">
             <title>基金</title>
             <style type="text/css">
                 table {
@@ -195,7 +196,7 @@ def fund_list(fund_dict: dict):
     <script>
         var hostAndPort = document.location.host;
         function update_fund(){
-            window.open("http://"+hostAndPort+"/updateFund","_blank");
+            window.open("http://"+hostAndPort+"/update","_blank");
         }
         
         function del_fund(obj) {
@@ -244,7 +245,7 @@ def fund_list(fund_dict: dict):
                     window.location.reload();
                 }
             }
-            request.open("GET", url);
+            request.open("post", url);
             request.send(null);
         }
     </script>
@@ -260,6 +261,7 @@ def fund_update_page(current_login_user):
     content = """
     <html>
         <head>
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
             <title>基金更新(
     """
@@ -314,7 +316,7 @@ def fund_update_page(current_login_user):
             </style>
         </head>
         <body>
-            <form action="update" method="GET">
+            <form action="update" method="post">
             <div>
                 <div>
                     <label>基金编码：</label><input type="text" name="fundcode" placeholder="请输入基金编码" maxlength="6">
@@ -345,6 +347,7 @@ def update_success_page(fund: Fund):
     content = """
         <html>
             <head>
+                <meta charset="UTF-8">
                 <title>更新成功</title>
             </head>
             <style type="text/css">
@@ -417,6 +420,7 @@ def update_failed_page(reason: str):
     content = """
         <html>
             <head>
+                <meta charset="UTF-8">
                 <title>更新失败</title>
             </head>
             <style type="text/css">
@@ -471,6 +475,150 @@ def update_failed_page(reason: str):
                 <p>
                 """
     content += reason + "</p>"
+    content += """
+                <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
+            </body>
+        </html>
+        """
+    return content
+
+
+def un_support_method_page(method: str):
+    """
+    不支持的请求类型
+    :param method:
+    :return:
+    """
+    content = """
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>操作失败</title>
+            </head>
+            <style type="text/css">
+                            .ant-btn {
+                                line-height: 1.499;
+                                position: relative;
+                                display: inline-block;
+                                font-weight: 400;
+                                white-space: nowrap;
+                                text-align: center;
+                                background-image: none;
+                                border: 1px solid transparent;
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                cursor: pointer;
+                                -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                -webkit-user-select: none;
+                                -moz-user-select: none;
+                                -ms-user-select: none;
+                                user-select: none;
+                                -ms-touch-action: manipulation;
+                                touch-action: manipulation;
+                                height: 32px;
+                                padding: 0 15px;
+                                font-size: 14px;
+                                border-radius: 4px;
+                                color: rgba(0,0,0,0.65);
+                                background-color: #fff;
+                                border-color: #d9d9d9;
+                            }
+                            
+                            .ant-btn-primary {
+                                color: #fff;
+                                background-color: #1890ff;
+                                border-color: #1890ff;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                            .ant-btn-red {
+                                color: #fff;
+                                background-color: #FF5A44;
+                                border-color: #FF5A44;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                </style>
+            <body>
+                <h3>操作失败</h3>
+                <p>不支持的请求类型：
+                """
+    content += method + "</p>"
+    content += """
+                <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
+            </body>
+        </html>
+        """
+    return content
+
+
+def error_msg_page(error_msg: str):
+    """
+    不支持的请求类型
+    :param error_msg
+    :return:
+    """
+    content = """
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>出错了</title>
+            </head>
+            <style type="text/css">
+                            .ant-btn {
+                                line-height: 1.499;
+                                position: relative;
+                                display: inline-block;
+                                font-weight: 400;
+                                white-space: nowrap;
+                                text-align: center;
+                                background-image: none;
+                                border: 1px solid transparent;
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.015);
+                                cursor: pointer;
+                                -webkit-transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                transition: all .3s cubic-bezier(.645, .045, .355, 1);
+                                -webkit-user-select: none;
+                                -moz-user-select: none;
+                                -ms-user-select: none;
+                                user-select: none;
+                                -ms-touch-action: manipulation;
+                                touch-action: manipulation;
+                                height: 32px;
+                                padding: 0 15px;
+                                font-size: 14px;
+                                border-radius: 4px;
+                                color: rgba(0,0,0,0.65);
+                                background-color: #fff;
+                                border-color: #d9d9d9;
+                            }
+                            
+                            .ant-btn-primary {
+                                color: #fff;
+                                background-color: #1890ff;
+                                border-color: #1890ff;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                            .ant-btn-red {
+                                color: #fff;
+                                background-color: #FF5A44;
+                                border-color: #FF5A44;
+                                text-shadow: 0 -1px 0 rgba(0,0,0,0.12);
+                                -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                                box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+                            }
+                </style>
+            <body>
+                <h3>出错了</h3>
+                <p>：
+                """
+    content += error_msg + "</p>"
     content += """
                 <input type="button" class="ant-btn ant-btn-red" onclick="javascript:history.back(-1)" value="返回"></button>
             </body>

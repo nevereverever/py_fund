@@ -39,4 +39,12 @@ class Request:
             value = request_header.split(": ")[1]
             self.request_header_params[key] = value
 
+        # 请求体非空需要进行解析
+        if self.request_body.strip() != "":
+            request_body_list = self.request_body.split("&")
+            for request_body in request_body_list:
+                key = request_body.split("=")[0]
+                value = request_body.split("=")[1]
+                self.request_body_params[key] = value
+
         return self
