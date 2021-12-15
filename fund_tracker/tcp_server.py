@@ -51,7 +51,7 @@ def router_handler(c_socket: socket, request: Request):
             login(c_socket, request.request_body_params)
             return
         else:
-            success_200_response(c_socket, fund_view.un_support_method_page(request.method))
+            login_page(c_socket)
             return
 
     jsessionid = get_jsessionid(request.request_header_params["Cookie"])
@@ -125,7 +125,7 @@ def login(client_socket: socket, request_body_params: dict):
             cookie = get_cookie(username, password)
             # 构造响应数据
             response_start_line = "HTTP/1.1 302 JUMP\r\n"
-            response_headers = "Server: My server\r\n"
+            response_headers = "Server: nevereverever\r\n"
             expire_time = (datetime.now() + timedelta(hours=1)).strftime("%a, %d %b %Y %H:%M:%S GMT")
             response_headers += "Set-Cookie: JSESSIONID={}; expire={}; Max-Age={}; HttpOnly\r\n"\
                 .format(cookie, expire_time, 3600)
@@ -153,17 +153,10 @@ def logout(client_socket: socket):
     # if cookie in cookie_dict:
     #     del cookie_dict[cookie]
 
-    response_start_line = "HTTP/1.1 200 OK\r\n"
-    response_headers = "Server: My server\r\n"
     expire_time = (datetime.now() + timedelta(hours=-1)).strftime("%a, %d %b %Y %H:%M:%S GMT")
-    response_headers += "Set-Cookie: JSESSIONID={}; expire={}; HttpOnly\r\n" \
+    response_headers = "Set-Cookie: JSESSIONID={}; expire={}\r\n" \
         .format("", expire_time)
-    response_body = response_start_line + response_headers + "\r\n"
-
-    # 向客户端返回响应数据
-    client_socket.send(bytes(response_body + "用户已退出", "gbk"))
-    # 关闭客户端连接
-    client_socket.close()
+    success_200_response(client_socket, "user called logout", response_headers)
 
 
 def login_handler(jsessionid: str):
@@ -274,17 +267,19 @@ def refund_update_page(client_socket: socket, current_login_user: str):
     success_200_response(client_socket, fund_view.fund_update_page(current_login_user))
 
 
-def success_200_response(client_socket: socket, content: str):
+def success_200_response(client_socket: socket, content: str, response_headers=""):
     """
     200响应
     :param client_socket:
+    :param response_headers:
     :param content:
     :return:
     """
     # 构造响应数据
     response_start_line = "HTTP/1.1 200 OK\r\n"
-    response_headers = "Server: My server\r\n"
-    response_body = response_start_line + response_headers + "\r\n"
+    response_header = "Server: nevereverever\r\n"
+    response_header += response_headers
+    response_body = response_start_line + response_header + "\r\n"
     # 向客户端返回响应数据
     client_socket.send(bytes(response_body + content, "utf-8"))
     # 关闭客户端连接
@@ -300,7 +295,7 @@ def error_500_response(client_socket: socket, content: str):
     """
     # 构造响应数据
     response_start_line = "HTTP/1.1 500 ERROR\r\n"
-    response_headers = "Server: My server\r\n"
+    response_headers = "Server: nevereverever\r\n"
     response_body = response_start_line + response_headers + "\r\n"
     # 向客户端返回响应数据
     client_socket.send(bytes(response_body + content, "utf-8"))
