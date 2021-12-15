@@ -54,18 +54,13 @@ def router_handler(c_socket: socket, request: Request):
             success_200_response(c_socket, fund_view.un_support_method_page(request.method))
             return
 
-    # 非登录的权限需要进行鉴权
-    try:
-        cookie = request.request_header_params["Cookie"].split("=")[1]
-    except Exception:
-        login_page(c_socket)
-        return
+    jsessionid = get_jsessionid(request.request_header_params["Cookie"])
     # 登录拦截
-    if login_handler(cookie) is False:
+    if login_handler(jsessionid) is False:
         login_page(c_socket)
         return
     # 从cookie获取登录用户
-    current_login_user = get_login_user(cookie)
+    current_login_user = get_login_user(jsessionid)
     if request.url == "/" or request.url == "/list":
         refund_list(c_socket, current_login_user)
     elif request.url.startswith("/deleteFund"):
@@ -171,16 +166,16 @@ def logout(client_socket: socket):
     client_socket.close()
 
 
-def login_handler(cookie: str):
+def login_handler(jsessionid: str):
     """
     登录拦截器
-    :param cookie: cookie
+    :param jsessionid: cookie
     :return: 是否登录成功
     """
-    if len(cookie) == 0:
+    if len(jsessionid) == 0:
         return False
     global cookie_dict
-    return cookie in cookie_dict
+    return jsessionid in cookie_dict
 
 
 def get_cookie(username: str, password: str):
@@ -195,14 +190,31 @@ def get_cookie(username: str, password: str):
     return md5.hexdigest()
 
 
-def get_login_user(cookie: str):
+def get_jsessionid(cookie_str: str):
+    """
+    获取jsessionid
+    :param cookie_str:
+    :return:
+    """
+    # 非登录的权限需要进行鉴权
+    jsessionid = ""
+    cookies = cookie_str.split("; ")
+    for cookie in cookies:
+        if cookie.split("=")[0] == "JSESSIONID":
+            jsessionid = cookie.split("=")[1].strip()
+            break
+
+    return jsessionid
+
+
+def get_login_user(jsessionid: str):
     """
     获取当前登录用户
-    :param cookie: cookie
+    :param jsessionid: jsessionid
     :return:
     """
     global cookie_dict
-    return cookie_dict.get(cookie)
+    return cookie_dict.get(jsessionid)
 
 
 def refund_update(client_socket: socket, current_login_user: str, request_body_params: dict):
