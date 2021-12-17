@@ -201,7 +201,7 @@ def fund_list(fund_dict: dict):
         
         function del_fund(obj) {
             const fundcode = obj.parentNode.parentNode.id;
-            const url = "http://"+hostAndPort+"/deleteFund?fundcode=" + fundcode
+            const url = "http://"+hostAndPort+"/deleteFund"
             const request = new XMLHttpRequest();
             request.onload = function() {
                 if (request.status == 200) {
@@ -209,8 +209,9 @@ def fund_list(fund_dict: dict):
                     obj.parentNode.parentNode.remove();
                 }
             }
-            request.open("GET", url);
-            request.send(null);
+            request.open("post", url);
+            request.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+            request.send("fundcode=" + fundcode);
         }
     
         var fresh = true;
